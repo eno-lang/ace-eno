@@ -9,5 +9,6 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/eno-lang/ace-eno.git"
-  }
+  },
+  "version": "0.1.0"
 }
