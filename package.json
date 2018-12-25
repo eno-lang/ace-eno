@@ -1,0 +1,13 @@
+{
+  "author": "Simon Repp <simon@fdpl.io>",
+  "bugs": {
+    "url": "https://github.com/eno-lang/ace-eno/issues"
+  },
+  "description": "eno lanugage support for ace",
+  "license": "MIT",
+  "name": "ace-eno",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eno-lang/ace-eno.git"
+  }
+}
