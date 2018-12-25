@@ -5,10 +5,12 @@
   },
   "description": "eno lanugage support for ace",
   "license": "MIT",
+  "main": "./builds/src-noconflict/ace.js",
   "name": "ace-eno",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/eno-lang/ace-eno.git"
   },
+  "typings": "./builds/ace.d.ts",
   "version": "0.1.0"
 }
