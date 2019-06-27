@@ -14,14 +14,14 @@ define("ace/mode/eno_highlight_rules",["require","exports","module","ace/lib/oop
         {
           next: 'multilineField',
           onMatch: function(value, currentState, state) {
-              const tokens = value.split(this.splitRegex);
-              state.unshift(this.next, { operator: tokens[1], key: tokens[3] });
+            const tokens = value.split(this.splitRegex);
+            state.unshift(this.next, tokens[1].length.toString() + tokens[3]);
 
-              return [
-                { type: 'punctuation.definition.multiline-field.begin.eno', value: tokens[1] },
-                { type: 'text', value: tokens[2] },
-                { type: 'variable.other.name.multiline-field.eno', value: tokens[3] }
-              ];
+            return [
+              { type: 'punctuation.definition.multiline-field.begin.eno', value: tokens[1] },
+              { type: 'text', value: tokens[2] },
+              { type: 'variable.other.name.multiline-field.eno', value: tokens[3] }
+            ];
           },
           regex: /(-{2,})(?!-)(\s*)(\S[^\n]*?)(?:\s*$)/
         },
@@ -36,57 +36,57 @@ define("ace/mode/eno_highlight_rules",["require","exports","module","ace/lib/oop
         {
           regex: /(#{1,})(?!#)(\s*)([^\s<`][^\n<]*?)(\s*)(?:(<(?!<)|<<)(\s*)(\S[^\n]*?))?(?:\s*$)/,
           token: [
-              'punctuation.definition.section.eno',
-              'text',
-              'entity.name.section.eno',
-              'text',
-              'punctuation.separator.template.eno',
-              'text',
-              'entity.name.section.template.eno'
+            'punctuation.definition.section.eno',
+            'text',
+            'entity.name.section.eno',
+            'text',
+            'punctuation.separator.template.eno',
+            'text',
+            'entity.name.section.template.eno'
           ]
         },
         {
           regex: /(\||\\)(\s*)(.+?)?(?:\s*$)/,
           token: [
-              'punctuation.definition.continuation.eno',
-              'text',
-              'string.unquoted.eno'
+            'punctuation.definition.continuation.eno',
+            'text',
+            'string.unquoted.eno'
           ]
         },
         {
           regex: /([^\s<>\-#=:\\|`][^\n<=:]*?)(?:\s*)$/,
           token: [
-             'variable.other.name.empty.eno'
+           'variable.other.name.empty.eno'
           ]
         },
         {
           regex: /([^\s<>\-#=:\\|`][^\n<=:]*?)(\s*)(:)(\s*)(\S.*?)?(?:\s*)$/,
           token: [
-             'variable.other.name.element.eno',
-             'text',
-             'punctuation.separator.element.eno',
-             'text',
-             'string.unquoted.value.eno'
+           'variable.other.name.element.eno',
+           'text',
+           'punctuation.separator.element.eno',
+           'text',
+           'string.unquoted.value.eno'
           ]
         },
         {
           regex: /([^\s<>\-#=:\\|`][^\n<=:]*?)(\s*)(=)(\s*)(\S.*?)?(?:\s*)$/,
           token: [
-             'variable.other.name.fieldset-entry.eno',
-             'text',
-             'punctuation.separator.fieldset-entry.eno',
-             'text',
-             'string.unquoted.value.eno'
+            'variable.other.name.fieldset-entry.eno',
+            'text',
+            'punctuation.separator.fieldset-entry.eno',
+            'text',
+            'string.unquoted.value.eno'
           ]
         },
         {
           regex: /([^\s<>\-#=:\\|`][^\n<=:]*?)(\s*)(<)(\s*)(\S.*?)(?:\s*)$/,
           token: [
-             'variable.other.name.element.eno',
-             'text',
-             'punctuation.separator.template.eno',
-             'text',
-             'variable.other.name.element.template.eno'
+            'variable.other.name.element.eno',
+            'text',
+            'punctuation.separator.template.eno',
+            'text',
+            'variable.other.name.element.template.eno'
           ]
         },
         {
@@ -134,17 +134,17 @@ define("ace/mode/eno_highlight_rules",["require","exports","module","ace/lib/oop
         {
           regex: /(#{1,})(?!#)(\s*)(`+)(\s*)((?:(?!\3).)+)(\s*)(\3)(\s*)(?:(<(?!<)|<<)(\s*)(\S[^\n]*?))?(?:\s*$)/,
           token: [
-              'punctuation.definition.section.eno',
-              'text',
-              'punctuation.definition.section.escape.begin.eno',
-              'text',
-              'entity.name.section.eno',
-              'text',
-              'punctuation.definition.section.escape.end.eno',
-              'text',
-              'punctuation.separator.template.eno',
-              'text',
-              'entity.name.section.template.eno'
+            'punctuation.definition.section.eno',
+            'text',
+            'punctuation.definition.section.escape.begin.eno',
+            'text',
+            'entity.name.section.eno',
+            'text',
+            'punctuation.definition.section.escape.end.eno',
+            'text',
+            'punctuation.separator.template.eno',
+            'text',
+            'entity.name.section.template.eno'
           ]
         },
         {
@@ -156,20 +156,19 @@ define("ace/mode/eno_highlight_rules",["require","exports","module","ace/lib/oop
         {
           next: 'start',
           onMatch: function(value, currentState, state) {
-              const tokens = value.split(this.splitRegex);
+            const tokens = value.split(this.splitRegex);
 
-              if(state[1].operator === tokens[1] && state[1].key === tokens[3]) {
-                state.shift();
-                state.shift();
+            if(tokens[1].length.toString() + tokens[3] !== state[1])
+              return 'string.unquoted.eno';
 
-                return [
-                  { type: 'punctuation.definition.multiline-field.end.eno', value: tokens[1] },
-                  { type: 'text', value: tokens[2] },
-                  { type: 'variable.other.name.multiline-field.eno', value: tokens[3] }
-                ];
-              } else {
-                return 'string.unquoted.eno';
-              }
+            state.shift();
+            state.shift();
+
+            return [
+              { type: 'punctuation.definition.multiline-field.end.eno', value: tokens[1] },
+              { type: 'text', value: tokens[2] },
+              { type: 'variable.other.name.multiline-field.eno', value: tokens[3] }
+            ];
           },
           regex: /(-{2,})(?!-)(\s*)(\S[^\n]*?)(?:\s*$)/
         },
