@@ -82,7 +82,7 @@ define(function(require, exports, module) {
         },
         {
           // name <[<] [value]
-          regex: /([^\s<>\-#=:\\|`][^\n<=:]*?)(\s*)(<(?!<)|<<)(\s*)(\S.*?)(?:\s*)$/,
+          regex: /([^\s<>\-#=:\\|`][^\n<=:]*?)(\s*)(<)(\s*)(\S.*?)(?:\s*)$/,
           token: [
              'variable.other.name.eno',
              'text',
@@ -123,7 +123,7 @@ define(function(require, exports, module) {
         },
         {
           // `name` < [value]
-          regex: /(`+)(\s*)((?:(?!\1).)+)(\s*)(\1)(\s*)(<(?!<)|<<)(\s*)(\S.*?)(?:\s*)$/,
+          regex: /(`+)(\s*)((?:(?!\1).)+)(\s*)(\1)(\s*)(<)(\s*)(\S.*?)(?:\s*)$/,
           token: [
             'punctuation.definition.name.escape.begin.eno',
             'text',
