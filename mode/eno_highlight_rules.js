@@ -59,6 +59,13 @@ define(function(require, exports, module) {
           ]
         },
         {
+          // empty
+          regex: /([^\s<>\-#=:\\|`][^\n<=:]*?)(?:\s*)$/,
+          token: [
+             'variable.other.name.empty.eno'
+          ]
+        },
+        {
           // element: (value)
           regex: /([^\s<>\-#=:\\|`][^\n<=:]*?)(\s*)(:)(\s*)(\S.*?)?(?:\s*)$/,
           token: [
