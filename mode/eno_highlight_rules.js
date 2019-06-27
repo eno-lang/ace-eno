@@ -17,7 +17,7 @@ define(function(require, exports, module) {
           next: 'multilineField',
           onMatch: function(value, currentState, state) {
               const tokens = value.split(this.splitRegex);
-              state.unshift(this.next, tokens[3]);
+              state.unshift(this.next, { operator: tokens[1], key: tokens[3] });
 
               return [
                 { type: 'punctuation.definition.multiline-field.begin.eno', value: tokens[1] },
@@ -164,7 +164,7 @@ define(function(require, exports, module) {
           onMatch: function(value, currentState, state) {
               const tokens = value.split(this.splitRegex);
 
-              if(state[1] === tokens[3]) {
+              if(state[1].operator === tokens[1] && state[1].key === tokens[3]) {
                 state.shift();
                 state.shift();
 
