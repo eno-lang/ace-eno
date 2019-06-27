@@ -12,5 +12,5 @@
     "url": "git+https://github.com/eno-lang/ace-eno.git"
   },
   "typings": "./builds/ace.d.ts",
-  "version": "0.1.0"
+  "version": "0.2.0"
 }

@@ -108,16 +108,19 @@ var FSharpHighlightRules = function () {
                 regex: "\\+\\.|\\-\\.|\\*\\.|\\/\\.|#|;;|\\+|\\-|\\*|\\*\\*\\/|\\/\\/|%|<<|>>|&|\\||\\^|~|<|>|<=|=>|==|!=|<>|<-|=|\\(\\*\\)"
             },
             {
-                token: "paren.lpar",
+                token: "paren.lparen",
                 regex: "[[({]"
             },
             {
-                token: "paren.rpar",
+                token: "paren.rparen",
                 regex: "[\\])}]"
             }
         ],
         blockComment: [{
-            regex: /\(\*/,
+            regex: /\(\*\)/,
+            token: "comment"
+        }, {
+            regex: /\(\*(?!\))/,
             token: "comment.start",
             push: "blockComment"
         }, {

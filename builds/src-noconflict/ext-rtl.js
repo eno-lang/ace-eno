@@ -1,7 +1,5 @@
-ace.define("ace/ext/rtl",["require","exports","module","ace/lib/dom","ace/lib/lang","ace/editor","ace/config"], function(require, exports, module) {
+ace.define("ace/ext/rtl",["require","exports","module","ace/editor","ace/config"], function(require, exports, module) {
 "use strict";
-var dom = require("ace/lib/dom");
-var lang = require("ace/lib/lang");
 
 var commands = [{
     name: "leftToRight",
@@ -35,6 +33,20 @@ require("../config").defineOptions(Editor.prototype, "editor", {
                 this.renderer.off("afterRender", updateLineDirection);
                 this.commands.off("exec", onCommandEmitted);
                 this.commands.removeCommands(commands);
+                clearTextLayer(this.renderer);
+            }
+            this.renderer.updateFull();
+        }
+    },
+    rtl: {
+        set: function(val) {
+            this.session.$bidiHandler.$isRtl = val;
+            if (val) {
+                this.setOption("rtlText", false);
+                this.renderer.on("afterRender", updateLineDirection);
+                this.session.$bidiHandler.seenBidi = true;
+            } else {
+                this.renderer.off("afterRender", updateLineDirection);
                 clearTextLayer(this.renderer);
             }
             this.renderer.updateFull();

@@ -1,7 +1,5 @@
-define("ace/ext/rtl",["require","exports","module","ace/lib/dom","ace/lib/lang","ace/editor","ace/config"], function(require, exports, module) {
+define("ace/ext/rtl",["require","exports","module","ace/editor","ace/config"], function(require, exports, module) {
 "use strict";
-var dom = require("ace/lib/dom");
-var lang = require("ace/lib/lang");
 
 var commands = [{
     name: "leftToRight",
@@ -35,6 +33,20 @@ require("../config").defineOptions(Editor.prototype, "editor", {
                 this.renderer.off("afterRender", updateLineDirection);
                 this.commands.off("exec", onCommandEmitted);
                 this.commands.removeCommands(commands);
+                clearTextLayer(this.renderer);
+            }
+            this.renderer.updateFull();
+        }
+    },
+    rtl: {
+        set: function(val) {
+            this.session.$bidiHandler.$isRtl = val;
+            if (val) {
+                this.setOption("rtlText", false);
+                this.renderer.on("afterRender", updateLineDirection);
+                this.session.$bidiHandler.seenBidi = true;
+            } else {
+                this.renderer.off("afterRender", updateLineDirection);
                 clearTextLayer(this.renderer);
             }
             this.renderer.updateFull();
@@ -1086,17 +1098,6 @@ var event = require("ace/lib/event");
 var Range = require("ace/range").Range;
 var EditSession = require("ace/edit_session").EditSession;
 var UndoManager = require("ace/undomanager").UndoManager;
-function warn() {
-    var s = (new Error()).stack || "";
-    s = s.split("\n");
-    if (s[1] == "Error") s.shift(); // remove error description on chrome
-    s.shift(); // remove warn
-    s.shift(); // remove the getter
-    s = s.join("\n");
-    if (!/at Object.InjectedScript.|@debugger eval|snippets:\/{3}|<anonymous>:\d+:\d+/.test(s)) {
-        console.error("trying to access to global variable");
-    }
-}
 function def(o, key, get) {
     try {
         Object.defineProperty(o, key, {
@@ -1111,30 +1112,13 @@ function def(o, key, get) {
         console.error(e);
     }
 }
-def(window, "ace", function(){ warn(); return window.env.editor });
-def(window, "editor", function(){ warn(); return window.env.editor == logEditor ? editor : window.env.editor });
+def(window, "ace", function(){  return window.env.editor });
+def(window, "editor", function(){  return window.env.editor == logEditor ? editor : window.env.editor });
 def(window, "session", function(){ return window.editor.session });
-def(window, "split", function(){ warn(); return window.env.split });
+def(window, "split", function(){  return window.env.split });
 
 
-def(window, "devUtil", function(){ warn(); return exports });
-exports.showTextArea = function(argument) {
-    dom.importCssString("\
-      .ace_text-input {\
-        position: absolute;\
-        z-index: 10!important;\
-        width: 6em!important;\
-        height: 1em;\
-        opacity: 1!important;\
-        background: rgba(0, 92, 255, 0.11);\
-        border: none;\
-        font: inherit;\
-        padding: 0 1px;\
-        margin: 0 -1px;\
-        text-indent: 0em;\
-    }\
-    ");
-};
+def(window, "devUtil", function(){ return exports });
 
 exports.addGlobals = function() {
     window.oop = require("ace/lib/oop");
@@ -1477,7 +1461,19 @@ exports.textInputDebugger = {
     getValue: function() {
         return !!env.textarea;
     }
-}
+};
+
+exports.textPositionDebugger = {
+    position: 2000,
+    onchange: function(value) {
+        document.body.classList[value ? "add" : "remove"]("show-text-input")
+    },
+    getValue: function() {
+        return document.body.classList.contains("show-text-input");
+    }
+};
+
+exports.addGlobals();
 
 });
 
@@ -1528,10 +1524,11 @@ var supportedModes = {
     Assembly_x86:["asm|a"],
     AutoHotKey:  ["ahk"],
     Apex:        ["apex|cls|trigger|tgr"],
+    AQL:         ["aql"],
     BatchFile:   ["bat|cmd"],
-    Bro:         ["bro"],
     C_Cpp:       ["cpp|c|cc|cxx|h|hh|hpp|ino"],
     C9Search:    ["c9search_results"],
+    Crystal:     ["cr"],
     Cirru:       ["cirru|cr"],
     Clojure:     ["clj|cljs"],
     Cobol:       ["CBL|COB"],
@@ -1609,7 +1606,9 @@ var supportedModes = {
     MIXAL:       ["mixal"],
     MUSHCode:    ["mc|mush"],
     MySQL:       ["mysql"],
+    Nginx:       ["nginx|conf"],
     Nix:         ["nix"],
+    Nim:         ["nim"],
     NSIS:        ["nsi|nsh"],
     ObjectiveC:  ["m|mm"],
     OCaml:       ["ml|mli"],
@@ -1637,7 +1636,7 @@ var supportedModes = {
     Rust:        ["rs"],
     SASS:        ["sass"],
     SCAD:        ["scad"],
-    Scala:       ["scala"],
+    Scala:       ["scala|sbt"],
     Scheme:      ["scm|sm|rkt|oak|scheme"],
     SCSS:        ["scss"],
     SH:          ["sh|bash|^.bashrc"],
@@ -1671,6 +1670,7 @@ var supportedModes = {
     XML:         ["xml|rdf|rss|wsdl|xslt|atom|mathml|mml|xul|xbl|xaml"],
     XQuery:      ["xq"],
     YAML:        ["yaml|yml"],
+    Zeek:        ["zeek|bro"],
     Django:      ["html"]
 };
 
@@ -1687,7 +1687,8 @@ var nameOverrides = {
     HTML_Elixir: "HTML (Elixir)",
     FTL: "FreeMarker",
     PHP_Laravel_blade: "PHP (Blade Template)",
-    Perl6: "Perl 6"
+    Perl6: "Perl 6",
+    AutoHotKey: "AutoHotkey / AutoIt"
 };
 var modesByName = {};
 for (var name in supportedModes) {
@@ -2060,22 +2061,26 @@ exports.$parseArg = function(arg) {
 
 exports.commands = [{
     name: "detectIndentation",
+    description: "Detect indentation from content",
     exec: function(editor) {
         exports.detectIndentation(editor.session);
     }
 }, {
     name: "trimTrailingSpace",
+    description: "Trim trailing whitespace",
     exec: function(editor, args) {
         exports.trimTrailingSpace(editor.session, args);
     }
 }, {
     name: "convertIndentation",
+    description: "Convert indentation to ...",
     exec: function(editor, arg) {
         var indent = exports.$parseArg(arg);
         exports.convertIndentation(editor.session, indent.ch, indent.length);
     }
 }, {
     name: "setIndentation",
+    description: "Set indentation",
     exec: function(editor, arg) {
         var indent = exports.$parseArg(arg);
         indent.length && editor.session.setTabSize(indent.length);
@@ -3880,19 +3885,23 @@ margin: 0px;\
 background: #f0f0f0;\
 }";
 dom.importCssString(cssText);
-module.exports.overlayPage = function overlayPage(editor, contentElement, top, right, bottom, left) {
-    top = top ? 'top: ' + top + ';' : '';
-    bottom = bottom ? 'bottom: ' + bottom + ';' : '';
-    right = right ? 'right: ' + right + ';' : '';
-    left = left ? 'left: ' + left + ';' : '';
 
+module.exports.overlayPage = function overlayPage(editor, contentElement, callback) {
     var closer = document.createElement('div');
-    var contentContainer = document.createElement('div');
 
     function documentEscListener(e) {
         if (e.keyCode === 27) {
-            closer.click();
+            close();
         }
+    }
+
+    function close() {
+        if (!closer) return;
+        document.removeEventListener('keydown', documentEscListener);
+        closer.parentNode.removeChild(closer);
+        editor.focus();
+        closer = null;
+        callback && callback();
     }
 
     closer.style.cssText = 'margin: 0; padding: 0; ' +
@@ -3900,34 +3909,20 @@ module.exports.overlayPage = function overlayPage(editor, contentElement, top, r
         'z-index: 9990; ' +
         'background-color: rgba(0, 0, 0, 0.3);';
     closer.addEventListener('click', function() {
-        document.removeEventListener('keydown', documentEscListener);
-        closer.parentNode.removeChild(closer);
-        editor.focus();
-        closer = null;
+        close();
     });
     document.addEventListener('keydown', documentEscListener);
 
-    contentContainer.style.cssText = top + right + bottom + left;
-    contentContainer.addEventListener('click', function(e) {
+    contentElement.addEventListener('click', function (e) {
         e.stopPropagation();
     });
 
-    var wrapper = dom.createElement("div");
-    wrapper.style.position = "relative";
-    
-    var closeButton = dom.createElement("div");
-    closeButton.className = "ace_closeButton";
-    closeButton.addEventListener('click', function() {
-        closer.click();
-    });
-    
-    wrapper.appendChild(closeButton);
-    contentContainer.appendChild(wrapper);
-    
-    contentContainer.appendChild(contentElement);
-    closer.appendChild(contentContainer);
+    closer.appendChild(contentElement);
     document.body.appendChild(closer);
     editor.blur();
+    return {
+        close: close
+    };
 };
 
 });
@@ -3991,13 +3986,14 @@ exports.themes = themeData.map(function(data) {
 
 });
 
-define("ace/ext/options",["require","exports","module","ace/ext/menu_tools/overlay_page","ace/lib/dom","ace/lib/oop","ace/lib/event_emitter","ace/ext/modelist","ace/ext/themelist"], function(require, exports, module) {
+define("ace/ext/options",["require","exports","module","ace/ext/menu_tools/overlay_page","ace/lib/dom","ace/lib/oop","ace/config","ace/lib/event_emitter","ace/ext/modelist","ace/ext/themelist"], function(require, exports, module) {
 "use strict";
 var overlayPage = require('./menu_tools/overlay_page').overlayPage;
 
  
 var dom = require("../lib/dom");
 var oop = require("../lib/oop");
+var config = require("../config");
 var EventEmitter = require("../lib/event_emitter").EventEmitter;
 var buildDom = dom.buildDom;
 
@@ -4032,7 +4028,8 @@ var optionGroups = {
             items: [
                 { caption : "Ace", value : null },
                 { caption : "Vim", value : "ace/keyboard/vim" },
-                { caption : "Emacs", value : "ace/keyboard/emacs" }
+                { caption : "Emacs", value : "ace/keyboard/emacs" },
+                { caption : "Sublime", value : "ace/keyboard/sublime" }
             ]
         },
         "Font Size": {
@@ -4201,7 +4198,8 @@ var OptionPanel = function(editor, element) {
                 ["table", {id: "more-controls"}, 
                     this.renderOptionGroup(optionGroups.More)
                 ]
-            ]]
+            ]],
+            ["tr", null, ["td", {colspan: 2}, "version " + config.version]]
         ], this.container);
     };
     
@@ -4339,8 +4337,8 @@ exports.OptionPanel = OptionPanel;
 
 define("ace/ext/statusbar",["require","exports","module","ace/lib/dom","ace/lib/lang"], function(require, exports, module) {
 "use strict";
-var dom = require("ace/lib/dom");
-var lang = require("ace/lib/lang");
+var dom = require("../lib/dom");
+var lang = require("../lib/lang");
 
 var StatusBar = function(editor, parentNode) {
     this.element = dom.createElement("div");
@@ -5295,12 +5293,13 @@ var Editor = require("./editor").Editor;
 
 });
 
-define("ace/ext/emmet",["require","exports","module","ace/keyboard/hash_handler","ace/editor","ace/snippets","ace/range","resources","resources","tabStops","resources","utils","actions","ace/config","ace/config"], function(require, exports, module) {
+define("ace/ext/emmet",["require","exports","module","ace/keyboard/hash_handler","ace/editor","ace/snippets","ace/range","ace/config","resources","resources","tabStops","resources","utils","actions"], function(require, exports, module) {
 "use strict";
-var HashHandler = require("ace/keyboard/hash_handler").HashHandler;
-var Editor = require("ace/editor").Editor;
-var snippetManager = require("ace/snippets").snippetManager;
-var Range = require("ace/range").Range;
+var HashHandler = require("../keyboard/hash_handler").HashHandler;
+var Editor = require("../editor").Editor;
+var snippetManager = require("../snippets").snippetManager;
+var Range = require("../range").Range;
+var config = require("../config");
 var emmet, emmetPath;
 function AceEmmetEditor() {}
 
@@ -5408,7 +5407,7 @@ AceEmmetEditor.prototype = {
         }
     },
     prompt: function(title) {
-        return prompt(title);
+        return prompt(title); // eslint-disable-line no-alert
     },
     getSelection: function() {
         return this.ace.session.getTextRange();
@@ -5581,7 +5580,7 @@ var onChangeMode = function(e, target) {
 
 exports.load = function(cb) {
     if (typeof emmetPath == "string") {
-        require("ace/config").loadModule(emmetPath, function() {
+        config.loadModule(emmetPath, function() {
             emmetPath = null;
             cb && cb();
         });
@@ -5589,7 +5588,7 @@ exports.load = function(cb) {
 };
 
 exports.AceEmmetEditor = AceEmmetEditor;
-require("ace/config").defineOptions(Editor.prototype, "editor", {
+config.defineOptions(Editor.prototype, "editor", {
     enableEmmet: {
         set: function(val) {
             this[val ? "on" : "removeListener"]("changeMode", onChangeMode);
@@ -5782,6 +5781,8 @@ var AcePopup = function(parentNode) {
         
         if (data.meta)
             tokens.push({type: "completion-meta", value: data.meta});
+        if (data.message)
+            tokens.push({type: "completion-message", value: data.message});
 
         return tokens;
     };
@@ -5867,6 +5868,21 @@ var AcePopup = function(parentNode) {
         popup.isOpen = true;
     };
 
+    popup.goTo = function(where) {
+        var row = this.getRow();
+        var max = this.session.getLength() - 1;
+
+        switch(where) {
+            case "up": row = row <= 0 ? max : row - 1; break;
+            case "down": row = row >= max ? -1 : row + 1; break;
+            case "start": row = 0; break;
+            case "end": row = max; break;
+        }
+
+        this.setRow(row);
+    };
+
+
     popup.getTextLeftOffset = function() {
         return this.$borderSize + this.renderer.$padding + this.$imageSize;
     };
@@ -5900,6 +5916,9 @@ dom.importCssString("\
     opacity: 0.5;\
     margin: 0.9em;\
 }\
+.ace_completion-message {\
+    color: blue;\
+}\
 .ace_editor.ace_autocomplete .ace_completion-highlight{\
     color: #2d69c7;\
 }\
@@ -5925,7 +5944,7 @@ dom.importCssString("\
 }", "autocompletion.css");
 
 exports.AcePopup = AcePopup;
-
+exports.$singleLineEditor = $singleLineEditor;
 });
 
 define("ace/autocomplete/util",["require","exports","module"], function(require, exports, module) {
@@ -5988,7 +6007,7 @@ exports.getCompletionPrefix = function (editor) {
 
 });
 
-define("ace/autocomplete",["require","exports","module","ace/keyboard/hash_handler","ace/autocomplete/popup","ace/autocomplete/util","ace/lib/event","ace/lib/lang","ace/lib/dom","ace/snippets"], function(require, exports, module) {
+define("ace/autocomplete",["require","exports","module","ace/keyboard/hash_handler","ace/autocomplete/popup","ace/autocomplete/util","ace/lib/event","ace/lib/lang","ace/lib/dom","ace/snippets","ace/config"], function(require, exports, module) {
 "use strict";
 
 var HashHandler = require("./keyboard/hash_handler").HashHandler;
@@ -5998,6 +6017,7 @@ var event = require("./lib/event");
 var lang = require("./lib/lang");
 var dom = require("./lib/dom");
 var snippetManager = require("./snippets").snippetManager;
+var config = require("./config");
 
 var Autocomplete = function() {
     this.autoInsert = false;
@@ -6121,17 +6141,7 @@ var Autocomplete = function() {
     };
 
     this.goTo = function(where) {
-        var row = this.popup.getRow();
-        var max = this.popup.session.getLength() - 1;
-
-        switch(where) {
-            case "up": row = row <= 0 ? max : row - 1; break;
-            case "down": row = row >= max ? -1 : row + 1; break;
-            case "start": row = 0; break;
-            case "end": row = max; break;
-        }
-
-        this.popup.setRow(row);
+        this.popup.goTo(where);
     };
 
     this.insertMatch = function(data, options) {
@@ -6373,17 +6383,45 @@ var Autocomplete = function() {
         }
     };
 
+    this.destroy = function() {
+        this.detach();
+        this.popup && this.popup.destroy();
+        var el = this.popup.container;
+        if (el && el.parentNode)
+            el.parentNode.removeChild(el);
+        if (this.editor && this.editor.completer == this)
+            this.editor.completer == null;
+        this.popup = null;
+    };
+
 }).call(Autocomplete.prototype);
+
+
+Autocomplete.for = function(editor) {
+    if (editor.completer) {
+        return editor.completer;
+    }
+    if (config.get("sharedPopups")) {
+        if (!Autocomplete.$shared)
+            Autocomplete.$sharedInstance = new Autocomplete();
+        editor.completer = Autocomplete.$sharedInstance;
+    } else {
+        editor.completer = new Autocomplete();
+        editor.once("destroy", function(e, editor) {
+            editor.completer.destroy();
+        });
+    }
+    return editor.completer;
+};
 
 Autocomplete.startCommand = {
     name: "startAutocomplete",
     exec: function(editor) {
-        if (!editor.completer)
-            editor.completer = new Autocomplete();
-        editor.completer.autoInsert = false;
-        editor.completer.autoSelect = true;
-        editor.completer.showPopup(editor);
-        editor.completer.cancelContextMenu();
+        var completer = Autocomplete.for(editor);
+        completer.autoInsert = false;
+        completer.autoSelect = true;
+        completer.showPopup(editor);
+        completer.cancelContextMenu();
     },
     bindKey: "Ctrl-Space|Ctrl-Shift-Space|Alt-Space"
 };
@@ -6635,11 +6673,9 @@ var doLiveAutocomplete = function(e) {
     else if (e.command.name === "insertstring") {
         var prefix = util.getCompletionPrefix(editor);
         if (prefix && !hasCompleter) {
-            if (!editor.completer) {
-                editor.completer = new Autocomplete();
-            }
-            editor.completer.autoInsert = false;
-            editor.completer.showPopup(editor);
+            var completer = Autocomplete.for(editor);
+            completer.autoInsert = false;
+            completer.showPopup(editor);
         }
     }
 };
@@ -6995,6 +7031,7 @@ exports.beautify = function(session) {
 
 exports.commands = [{
     name: "beautify",
+    description: "Format selection (Beautify)",
     exec: function(editor) {
         exports.beautify(editor.session);
     },
@@ -7100,21 +7137,6 @@ env.editor.showCommandLine = function(val) {
         this.cmdLine.setValue(val, 1);
 };
 env.editor.commands.addCommands([{
-    name: "gotoline",
-    bindKey: {win: "Ctrl-L", mac: "Command-L"},
-    exec: function(editor, line) {
-        if (typeof line == "object") {
-            var arg = this.name + " " + editor.getCursorPosition().row;
-            editor.cmdLine.setValue(arg, 1);
-            editor.cmdLine.focus();
-            return;
-        }
-        line = parseInt(line, 10);
-        if (!isNaN(line))
-            editor.gotoLine(line);
-    },
-    readOnly: true
-}, {
     name: "snippet",
     bindKey: {win: "Alt-C", mac: "Command-Alt-C"},
     exec: function(editor, needle) {
@@ -7330,7 +7352,11 @@ optionsPanel.add({
         }
     },
     More: {
-        "Rtl Text": {
+        "RTL": {
+            path: "rtl",
+            position: 900
+        },
+        "Line based RTL switching": {
             path: "rtlText",
             position: 900
         },
@@ -7338,7 +7364,8 @@ optionsPanel.add({
             path: "showTokenInfo",
             position: 2000
         },
-        "Text Input Debugger": devUtil.textInputDebugger
+        "Text Input Debugger": devUtil.textInputDebugger,
+        "Show Textarea Position": devUtil.textPositionDebugger,
     }
 });
 
