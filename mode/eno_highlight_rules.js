@@ -13,22 +13,22 @@ define(function(require, exports, module) {
           token: 'comment.line.eno'
         },
         {
-          // -- name
-          next: 'block',
+          // -- multiline field
+          next: 'multilineField',
           onMatch: function(value, currentState, state) {
               const tokens = value.split(this.splitRegex);
               state.unshift(this.next, tokens[3]);
 
               return [
-                { type: 'punctuation.definition.block.begin.eno', value: tokens[1] },
+                { type: 'punctuation.definition.multiline-field.begin.eno', value: tokens[1] },
                 { type: 'text', value: tokens[2] },
-                { type: 'entity.name.block.eno', value: tokens[3] }
+                { type: 'variable.other.name.multiline-field.eno', value: tokens[3] }
               ];
           },
           regex: /(-{2,})(?!-)(\s*)(\S[^\n]*?)(?:\s*$)/
         },
         {
-          // - [value]
+          // - (item)
           regex: /(-)(\s*)(.+?)?(?:\s*$)/,
           token: [
             'punctuation.definition.item.eno',
@@ -37,20 +37,20 @@ define(function(require, exports, module) {
           ]
         },
         {
-          // # name [<[<] template]
+          // # section (<(<) template)
           regex: /(#{1,})(?!#)(\s*)([^\s<`][^\n<]*?)(\s*)(?:(<(?!<)|<<)(\s*)(\S[^\n]*?))?(?:\s*$)/,
           token: [
               'punctuation.definition.section.eno',
               'text',
               'entity.name.section.eno',
               'text',
-              'punctuation.definition.section.template.eno',
+              'punctuation.separator.template.eno',
               'text',
               'entity.name.section.template.eno'
           ]
         },
         {
-          // | value OR \ value
+          // | continuation OR \ continuation
           regex: /(\||\\)(\s*)(.+?)?(?:\s*$)/,
           token: [
               'punctuation.definition.continuation.eno',
@@ -59,85 +59,85 @@ define(function(require, exports, module) {
           ]
         },
         {
-          // name: [value]
+          // element: (value)
           regex: /([^\s<>\-#=:\\|`][^\n<=:]*?)(\s*)(:)(\s*)(\S.*?)?(?:\s*)$/,
           token: [
-             'variable.other.name.eno',
+             'variable.other.name.element.eno',
              'text',
-             'punctuation.definition.name.eno',
+             'punctuation.separator.element.eno',
              'text',
              'string.unquoted.value.eno'
           ]
         },
         {
-          // name = [value]
+          // entry = (value)
           regex: /([^\s<>\-#=:\\|`][^\n<=:]*?)(\s*)(=)(\s*)(\S.*?)?(?:\s*)$/,
           token: [
-             'variable.other.name.entry.eno',
+             'variable.other.name.fieldset-entry.eno',
              'text',
-             'punctuation.definition.name.entry.eno',
+             'punctuation.separator.fieldset-entry.eno',
              'text',
              'string.unquoted.value.eno'
           ]
         },
         {
-          // name <[<] [value]
+          // element < (value)
           regex: /([^\s<>\-#=:\\|`][^\n<=:]*?)(\s*)(<)(\s*)(\S.*?)(?:\s*)$/,
           token: [
-             'variable.other.name.eno',
+             'variable.other.name.element.eno',
              'text',
-             'punctuation.definition.name.template.eno',
+             'punctuation.separator.template.eno',
              'text',
-             'variable.other.name.template.eno'
+             'variable.other.name.element.template.eno'
           ]
         },
         {
-          // `name`: [value]
+          // `element`: (value)
           regex: /(`+)(\s*)((?:(?!\1).)+)(\s*)(\1)(\s*)(:)(\s*)(\S.*?)?(?:\s*)$/,
           token: [
-            'punctuation.definition.name.escape.begin.eno',
+            'punctuation.definition.key.escape.begin.eno',
             'text',
-            'variable.other.name.eno',
+            'variable.other.name.element.eno',
             'text',
-            'punctuation.definition.name.escape.end.eno',
+            'punctuation.definition.key.escape.end.eno',
             'text',
-            'punctuation.definition.name.eno',
+            'punctuation.separator.element.eno',
             'text',
             'string.unquoted.value.eno'
           ]
         },
         {
-          // `name` = [value]
+          // `entry` = (value)
           regex: /(`+)(\s*)((?:(?!\1).)+)(\s*)(\1)(\s*)(=)(\s*)(\S.*?)?(?:\s*)$/,
           token: [
-            'punctuation.definition.name.escape.begin.eno',
+            'punctuation.definition.key.escape.begin.eno',
             'text',
-            'variable.other.name.eno',
+            'variable.other.name.fieldset-entry.eno',
             'text',
-            'punctuation.definition.name.escape.end.eno',
+            'punctuation.definition.key.escape.end.eno',
             'text',
-            'punctuation.definition.name.entry.eno',
+            'punctuation.separator.fieldset-entry.eno',
             'text',
             'string.unquoted.value.eno'
           ]
         },
         {
-          // `name` < [value]
+          // `element` < template
           regex: /(`+)(\s*)((?:(?!\1).)+)(\s*)(\1)(\s*)(<)(\s*)(\S.*?)(?:\s*)$/,
           token: [
-            'punctuation.definition.name.escape.begin.eno',
+            'punctuation.definition.key.escape.begin.eno',
             'text',
-            'variable.other.name.eno',
+            'variable.other.name.element.eno',
             'text',
-            'punctuation.definition.name.escape.end.eno',
+            'punctuation.definition.key.escape.end.eno',
             'text',
-            'punctuation.definition.name.template.eno',
+            'punctuation.separator.template.eno',
             'text',
-            'variable.other.name.template.eno'
+            'variable.other.name.element.template.eno'
           ]
         },
         {
-          // # `name` [<[<] template]
+          // # `section` (<(<) template)
           regex: /(#{1,})(?!#)(\s*)(`+)(\s*)((?:(?!\3).)+)(\s*)(\3)(\s*)(?:(<(?!<)|<<)(\s*)(\S[^\n]*?))?(?:\s*$)/,
           token: [
               'punctuation.definition.section.eno',
@@ -148,7 +148,7 @@ define(function(require, exports, module) {
               'text',
               'punctuation.definition.section.escape.end.eno',
               'text',
-              'punctuation.definition.section.template.eno',
+              'punctuation.separator.template.eno',
               'text',
               'entity.name.section.template.eno'
           ]
@@ -158,7 +158,7 @@ define(function(require, exports, module) {
           token: 'invalid.illegal.eno'
         }
       ],
-      block: [
+      multilineField: [
         {
           next: 'start',
           onMatch: function(value, currentState, state) {
@@ -169,9 +169,9 @@ define(function(require, exports, module) {
                 state.shift();
 
                 return [
-                  { type: 'punctuation.definition.block.end.eno', value: tokens[1] },
+                  { type: 'punctuation.definition.multiline-field.end.eno', value: tokens[1] },
                   { type: 'text', value: tokens[2] },
-                  { type: 'entity.name.block.eno', value: tokens[3] }
+                  { type: 'variable.other.name.multiline-field.eno', value: tokens[3] }
                 ];
               } else {
                 return 'string.unquoted.eno';
