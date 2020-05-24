@@ -62,7 +62,7 @@ define(function(require, exports, module) {
           // empty
           regex: /([^\s<>\-#=:\\|`][^\n<=:]*?)(?:\s*)$/,
           token: [
-           'variable.other.name.empty.eno'
+            'variable.other.name.empty.eno'
           ]
         },
         {
@@ -96,6 +96,17 @@ define(function(require, exports, module) {
             'punctuation.separator.template.eno',
             'text',
             'variable.other.name.element.template.eno'
+          ]
+        },
+        {
+          // `empty`
+          regex: /(`+)(\s*)((?:(?!\1).)+)(\s*)(\1)(?:\s*)$/,
+          token: [
+            'punctuation.definition.key.escape.begin.eno',
+            'text',
+            'variable.other.name.empty.eno',
+            'text',
+            'punctuation.definition.key.escape.end.eno'
           ]
         },
         {
