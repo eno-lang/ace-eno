@@ -56,7 +56,7 @@ ace.define("ace/mode/eno_highlight_rules",["require","exports","module","ace/lib
         {
           regex: /([^\s<>\-#=:\\|`][^\n<=:]*?)(?:\s*)$/,
           token: [
-           'variable.other.name.empty.eno'
+            'variable.other.name.empty.eno'
           ]
         },
         {
@@ -87,6 +87,16 @@ ace.define("ace/mode/eno_highlight_rules",["require","exports","module","ace/lib
             'punctuation.separator.template.eno',
             'text',
             'variable.other.name.element.template.eno'
+          ]
+        },
+        {
+          regex: /(`+)(\s*)((?:(?!\1).)+)(\s*)(\1)(?:\s*)$/,
+          token: [
+            'punctuation.definition.key.escape.begin.eno',
+            'text',
+            'variable.other.name.empty.eno',
+            'text',
+            'punctuation.definition.key.escape.end.eno'
           ]
         },
         {
