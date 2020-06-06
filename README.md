@@ -1,6 +1,8 @@
 # ace-eno
 
-eno lanugage support for [Ace](https://ace.c9.io/)
+eno language support for [Ace](https://ace.c9.io/)
+
+![Screenshot](https://resources.eno-lang.org/plugins/ace.png)
 
 ## Usage
 
