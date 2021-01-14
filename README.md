@@ -2,8 +2,6 @@
 
 eno language support for [Ace](https://ace.c9.io/)
 
-![Screenshot](https://resources.eno-lang.org/plugins/ace.png)
-
 ## Usage
 
 `builds/` contains the same content that [ace-builds](https://www.npmjs.com/package/ace-builds) provides, refer to their instructions but using the files from here instead if you want to use a custom ace build (currently with version 1.4.10 of ace) with eno support.
